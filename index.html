@@ -1,16 +1,1682 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Minha primeira página</title>
-  <style>
-    body { font-family: sans-serif; max-width: 600px; margin: 60px auto; padding: 0 20px; }
-    h1 { color: #2b6cb0; }
-  </style>
-</head>
-<body>
-  <h1>Olá! Minha página está no ar 🎉</h1>
-  <p>Esta página foi publicada pelo GitHub Pages.</p>
-</body>
-</html>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Estrutura LED 5×3</title>
+<style>
+  :root{
+    --bg:#0a0c0f;
+    --bg-2:#12161c;
+    --panel: rgba(15,18,23,0.66);
+    --panel-line: rgba(255,255,255,0.10);
+    --ink:#eef1f4;
+    --ink-dim:#8d97a3;
+    --ink-faint:#5b6470;
+    --accent:#ff6a2b;
+    --accent-soft: rgba(255,106,43,0.35);
+    --mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --sans: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+    --disp: 'Archivo', 'IBM Plex Sans', system-ui, sans-serif;
+  }
+
+  *{ box-sizing:border-box; }
+
+  html, body{
+    background:var(--bg);
+    color:var(--ink);
+    margin:0;
+    font-family:var(--sans);
+    overflow-x:hidden;
+  }
+
+  ::selection{ background:var(--accent); color:#160b05; }
+
+  #scene{
+    position:fixed;
+    inset:0;
+    width:100%;
+    height:100%;
+    display:block;
+    z-index:0;
+    background:var(--bg);
+  }
+
+  .scroll-track{
+    position:relative;
+    z-index:1;
+    height:820vh;
+    pointer-events:none;
+  }
+
+  .hud{
+    position:fixed;
+    inset:0;
+    z-index:5;
+    pointer-events:none;
+    font-family:var(--sans);
+  }
+
+  .topbar{
+    position:absolute;
+    top:0; left:0; right:0;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding: calc(18px + env(safe-area-inset-top,0px)) 24px 0 24px;
+  }
+
+  .brand{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--ink-dim);
+  }
+
+  .brand b{
+    color:var(--ink);
+    font-weight:600;
+  }
+
+  .brand .dot{
+    width:6px; height:6px; border-radius:50%;
+    background:var(--accent);
+    display:inline-block;
+    box-shadow:0 0 8px 1px var(--accent-soft);
+  }
+
+  .badge{
+    font-family:var(--mono);
+    font-size:10.5px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--ink-faint);
+    border:1px solid var(--panel-line);
+    padding:6px 10px;
+    border-radius:100px;
+    background:var(--panel);
+    backdrop-filter: blur(6px);
+  }
+
+  .crosshair{
+    position:absolute;
+    top:50%; left:50%;
+    width:22px; height:22px;
+    transform:translate(-50%,-50%);
+    opacity:.28;
+  }
+  .crosshair i{
+    position:absolute; background:var(--ink);
+  }
+  .crosshair i:nth-child(1){ top:50%; left:0; width:100%; height:1px; transform:translateY(-.5px); }
+  .crosshair i:nth-child(2){ left:50%; top:0; height:100%; width:1px; transform:translateX(-.5px); }
+  .crosshair i:nth-child(3){
+    top:50%;left:50%;width:5px;height:5px;border-radius:50%;
+    transform:translate(-50%,-50%);
+    background:transparent; border:1px solid var(--accent);
+  }
+
+  .railnav{
+    position:absolute;
+    right:22px;
+    top:50%;
+    transform:translateY(-50%);
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+    pointer-events:auto;
+  }
+
+  .railnav button{
+    all:unset;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    cursor:pointer;
+    justify-content:flex-end;
+  }
+
+  .railnav .rn-num{
+    font-family:var(--mono);
+    font-size:10px;
+    color:var(--ink-faint);
+    letter-spacing:.05em;
+    transition:color .25s ease, transform .25s ease;
+    white-space:nowrap;
+    opacity:0;
+    transform:translateX(4px);
+    transition:opacity .2s ease, transform .2s ease, color .2s ease;
+  }
+
+  .railnav button:hover .rn-num,
+  .railnav button:focus-visible .rn-num{
+    opacity:1;
+    transform:translateX(0);
+  }
+
+  .railnav .rn-tick{
+    width:18px; height:2px;
+    background:var(--ink-faint);
+    opacity:.5;
+    transition:all .3s ease;
+  }
+
+  .railnav button.active .rn-tick{
+    width:30px;
+    background:var(--accent);
+    opacity:1;
+    box-shadow:0 0 8px var(--accent-soft);
+  }
+
+  .railnav button.active .rn-num{ color:var(--accent); opacity:1; transform:translateX(0); }
+
+  .railnav button:focus-visible .rn-tick{ outline:2px solid var(--accent); outline-offset:3px; }
+
+  .telemetry{
+    position:absolute;
+    left:24px;
+    bottom: calc(24px + env(safe-area-inset-bottom,0px));
+    font-family:var(--mono);
+    font-size:10.5px;
+    letter-spacing:.06em;
+    color:var(--ink-faint);
+    display:flex;
+    gap:14px;
+    flex-wrap:wrap;
+    max-width:60vw;
+  }
+  .telemetry span b{ color:var(--ink-dim); font-weight:500; }
+
+  .progress-rail{
+    position:absolute;
+    left:0; right:0; bottom:0;
+    height:2px;
+    background:var(--panel-line);
+  }
+  .progress-fill{
+    height:100%;
+    width:0%;
+    background:var(--accent);
+    box-shadow:0 0 10px var(--accent-soft);
+  }
+
+  .panels{
+    position:absolute;
+    left:24px;
+    right:24px;
+    bottom:64px;
+    max-width:520px;
+  }
+
+  .panel{
+    position:absolute;
+    left:0; bottom:0;
+    opacity:0;
+    transform:translateY(14px);
+    transition:opacity .35s ease, transform .35s ease;
+    pointer-events:none;
+  }
+  .panel.on{
+    opacity:1;
+    transform:translateY(0);
+  }
+
+  .panel .kicker{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--accent);
+    margin:0 0 10px 0;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .panel .kicker::before{
+    content:"";
+    width:26px; height:1px;
+    background:var(--accent);
+    display:inline-block;
+  }
+
+  .panel h2{
+    font-family:var(--disp);
+    font-weight:700;
+    font-size:clamp(24px, 4vw, 38px);
+    line-height:1.05;
+    letter-spacing:-.01em;
+    margin:0 0 12px 0;
+    text-wrap:balance;
+  }
+
+  .panel p{
+    margin:0 0 16px 0;
+    font-size:14.5px;
+    line-height:1.55;
+    color:var(--ink-dim);
+    max-width:46ch;
+  }
+
+  .specs{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px 10px;
+    list-style:none;
+    margin:0; padding:0;
+  }
+  .specs li{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.02em;
+    color:var(--ink-dim);
+    border:1px solid var(--panel-line);
+    background:var(--panel);
+    backdrop-filter: blur(6px);
+    padding:6px 10px;
+    border-radius:6px;
+    font-variant-numeric: tabular-nums;
+  }
+  .specs li b{ color:var(--ink); font-weight:600; }
+
+  .scrollhint{
+    position:absolute;
+    bottom:28px;
+    left:50%;
+    transform:translateX(-50%);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:8px;
+    font-family:var(--mono);
+    font-size:10px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--ink-faint);
+    transition:opacity .5s ease;
+  }
+  .scrollhint svg{ animation:bob 1.8s ease-in-out infinite; }
+  @keyframes bob{
+    0%,100%{ transform:translateY(0); opacity:.5; }
+    50%{ transform:translateY(6px); opacity:1; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .scrollhint svg{ animation:none; }
+  }
+
+  .intro-mark{
+    position:absolute;
+    top:50%;
+    left:24px;
+    transform:translateY(-50%);
+    max-width:min(560px, 44vw);
+    pointer-events:none;
+  }
+  .intro-mark .eyebrow{
+    font-family:var(--mono);
+    font-size:12px;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    color:var(--accent);
+    margin:0 0 14px 0;
+  }
+  .intro-mark h1{
+    font-family:var(--disp);
+    font-weight:800;
+    font-size:clamp(32px, 5vw, 56px);
+    line-height:1.02;
+    letter-spacing:-.015em;
+    margin:0 0 16px 0;
+    text-wrap:balance;
+  }
+  .intro-mark p{
+    font-size:15px;
+    line-height:1.6;
+    color:var(--ink-dim);
+    max-width:42ch;
+    margin:0;
+  }
+  .intro-mark{ transition:opacity .4s ease, transform .4s ease; }
+
+  .loader{
+    position:absolute;
+    left:50%; top:50%;
+    transform:translate(-50%, 42px);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:10px;
+    font-family:var(--mono);
+    font-size:10.5px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--ink-dim);
+    transition:opacity .5s ease;
+  }
+  .loader-bar{
+    width:180px; height:2px;
+    background:var(--panel-line);
+    overflow:hidden;
+  }
+  .loader-bar i{
+    display:block; height:100%; width:0%;
+    background:var(--accent);
+    transition:width .2s linear;
+  }
+  .loader.done{ opacity:0; }
+  .loader.error{ color:var(--accent); text-transform:none; letter-spacing:.02em; max-width:80vw; text-align:center; }
+
+  .topbar-right{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+
+  .stage-toggle{
+    display:inline-flex;
+    padding:2px;
+    border:1px solid var(--panel-line);
+    border-radius:100px;
+    background:var(--panel);
+    backdrop-filter: blur(6px);
+    pointer-events:auto;
+  }
+  .stage-toggle button{
+    all:unset;
+    cursor:pointer;
+    font-family:var(--mono);
+    font-size:10px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--ink-faint);
+    padding:5px 10px;
+    border-radius:100px;
+    transition:color .2s ease, background .2s ease;
+  }
+  .stage-toggle button:hover{ color:var(--ink-dim); }
+  .stage-toggle button[aria-pressed="true"]{ color:var(--ink); background:rgba(255,255,255,0.08); }
+  .stage-toggle button:focus-visible{ outline:2px solid var(--accent); outline-offset:1px; }
+
+  .topbar{ transition:background .4s ease; }
+  .panels, .telemetry, .crosshair{ transition:opacity .4s ease; }
+  .hud.in-doc .panels,
+  .hud.in-doc .telemetry,
+  .hud.in-doc .crosshair,
+  .hud.in-doc .scrollhint,
+  .hud.in-doc .loader{ opacity:0 !important; }
+  .hud.in-doc .topbar{
+    background:linear-gradient(to bottom, var(--bg) 55%, rgba(10,12,15,0));
+    padding-bottom:22px;
+  }
+
+  .cotas{
+    position:relative;
+    z-index:2;
+    background:var(--bg);
+    border-top:1px solid var(--panel-line);
+    padding-block:120px 96px;
+    padding-inline:clamp(16px, 7vw, 88px);
+  }
+  .cotas-inner{
+    max-width:1040px;
+    margin:0 auto;
+    display:flex;
+    flex-direction:column;
+    gap:56px;
+  }
+  .cotas-head .kicker{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--accent);
+    margin:0 0 10px 0;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .cotas-head .kicker::before{
+    content:"";
+    width:26px; height:1px;
+    background:var(--accent);
+    display:inline-block;
+  }
+  .cotas-head h2{
+    font-family:var(--disp);
+    font-weight:700;
+    font-size:clamp(24px, 4vw, 38px);
+    line-height:1.05;
+    letter-spacing:-.01em;
+    margin:0 0 12px 0;
+    text-wrap:balance;
+  }
+  .cotas-head p{
+    margin:0;
+    font-size:14.5px;
+    line-height:1.55;
+    color:var(--ink-dim);
+    max-width:60ch;
+  }
+  .sheet{
+    margin:0;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+  .sheet .paper{
+    all:unset;
+    box-sizing:border-box;
+    position:relative;
+    background:#ffffff;
+    border-radius:4px;
+    padding:clamp(12px, 3vw, 32px);
+    display:flex;
+    justify-content:center;
+    cursor:zoom-in;
+  }
+  .sheet .paper:focus-visible{ outline:2px solid var(--accent); outline-offset:3px; }
+  .zoom-hint{
+    position:absolute;
+    top:10px; right:10px;
+    font-family:var(--mono);
+    font-size:10px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:#12161c;
+    background:rgba(18,22,28,0.06);
+    border:1px solid rgba(18,22,28,0.18);
+    border-radius:100px;
+    padding:4px 9px;
+    opacity:0;
+    transition:opacity .2s ease;
+  }
+  .sheet .paper:hover .zoom-hint,
+  .sheet .paper:focus-visible .zoom-hint{ opacity:1; }
+  @media (hover: none){ .zoom-hint{ opacity:.8; } }
+
+  .lightbox{
+    position:fixed;
+    inset:0;
+    z-index:20;
+    background:var(--bg);
+    display:flex;
+    flex-direction:column;
+    padding: env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px) 0;
+  }
+  .lightbox[hidden]{ display:none !important; }
+  .lb-bar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    padding:14px 16px;
+    border-bottom:1px solid var(--panel-line);
+  }
+  .lb-title{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--accent);
+  }
+  .lb-actions{ display:flex; gap:6px; }
+  .lb-actions button{
+    all:unset;
+    cursor:pointer;
+    font-family:var(--mono);
+    font-size:12px;
+    letter-spacing:.06em;
+    color:var(--ink);
+    border:1px solid var(--panel-line);
+    border-radius:4px;
+    padding:7px 11px;
+    min-width:14px;
+    text-align:center;
+  }
+  .lb-actions button:hover{ background:rgba(255,255,255,0.06); }
+  .lb-actions button:focus-visible{ outline:2px solid var(--accent); outline-offset:1px; }
+  .lb-actions .lb-close{ border-color:var(--accent); }
+  .lb-stage{
+    position:relative;
+    flex:1;
+    overflow:hidden;
+    touch-action:none;
+    cursor:grab;
+  }
+  .lb-stage.dragging{ cursor:grabbing; }
+  .lb-stage img{
+    position:absolute;
+    left:50%; top:50%;
+    max-width:none;
+    background:#ffffff;
+    border-radius:3px;
+    user-select:none;
+    -webkit-user-drag:none;
+  }
+  .lb-hint{
+    margin:0;
+    padding:10px 16px 14px;
+    font-family:var(--mono);
+    font-size:10.5px;
+    color:var(--ink-faint);
+    text-align:center;
+  }
+  .sheet img{
+    display:block;
+    width:auto;
+    height:auto;
+    max-width:100%;
+    max-height:78vh;
+    object-fit:contain;
+  }
+  .legend-wrap{
+    border:1px solid var(--panel-line);
+    border-radius:4px;
+    background:var(--bg-2);
+    overflow-x:auto;
+  }
+  .legend-table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:14px;
+    color:var(--ink);
+  }
+  .legend-table th, .legend-table td{
+    padding:11px 16px;
+    text-align:left;
+    border-bottom:1px solid var(--panel-line);
+    vertical-align:middle;
+  }
+  .legend-table thead th{
+    font-family:var(--mono);
+    font-size:10.5px;
+    font-weight:500;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--ink-faint);
+  }
+  .legend-table tr.grp th{
+    font-family:var(--mono);
+    font-size:10.5px;
+    font-weight:500;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--accent);
+    padding-top:18px;
+  }
+  .legend-table tbody tr:last-child td{ border-bottom:0; }
+  .legend-table .c-sym{ width:150px; }
+  .legend-table .sym{ display:block; }
+  .legend-table .c-spec{ font-family:var(--mono); font-size:12.5px; color:var(--ink-dim); white-space:nowrap; }
+  .legend-table .c-qty{ text-align:right; font-family:var(--mono); font-variant-numeric:tabular-nums; font-weight:600; white-space:nowrap; }
+  .legend-actions{
+    display:flex;
+    justify-content:flex-end;
+    align-items:center;
+    gap:14px;
+    flex-wrap:wrap;
+    margin-top:6px;
+  }
+  .btn-export{
+    all:unset;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--ink);
+    border:1px solid var(--accent);
+    border-radius:4px;
+    padding:10px 14px;
+    transition:background .2s ease;
+  }
+  .btn-export:hover{ background:var(--accent-soft); }
+  .btn-export:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  .btn-export[aria-busy="true"]{ opacity:.6; cursor:progress; }
+  .export-status{ font-family:var(--mono); font-size:11px; color:var(--ink-dim); }
+  .sr-only{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+  .legend-table .spec-inline{ display:none; }
+  @media (max-width: 560px){
+    .legend-table th, .legend-table td{ padding:10px 10px; }
+    .legend-table .c-sym{ width:1%; }
+    .legend-table .sym{ max-width:64px; height:auto; }
+    .legend-table{ font-size:13px; }
+    .legend-table .c-spec{ display:none; }
+    .legend-table .spec-inline{ display:block; margin-top:2px; font-family:var(--mono); font-size:11.5px; color:var(--ink-dim); }
+  }
+  .sheet figcaption{
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--ink-dim);
+  }
+  .sheet figcaption span:last-child{ color:var(--ink-faint); }
+
+  @media (max-width: 720px){
+    .topbar .brand{ display:none; }
+    .topbar{ justify-content:flex-end; padding-left:16px; padding-right:16px; }
+  }
+
+  @media (max-width: 720px){
+    .railnav{ right:12px; gap:12px; }
+    .railnav .rn-num{ display:none; }
+    .telemetry{ display:none; }
+    .panels{ left:16px; right:16px; bottom:52px; }
+    .intro-mark{ left:16px; max-width:calc(100vw - 32px); top:42%; }
+    .panel p{ max-width:none; }
+  }
+</style>
+
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<canvas id="scene"></canvas>
+
+<div class="scroll-track" id="track"></div>
+
+<section class="cotas" id="cotas" aria-labelledby="cotasTitle">
+  <div class="cotas-inner">
+    <header class="cotas-head">
+      <p class="kicker">Vistas Cotadas</p>
+      <h2 id="cotasTitle">Frontal, Lateral e Topo</h2>
+      <p id="cotasLead">Desenhos técnicos com as cotas principais da estrutura, seguidos da legenda de componentes. Medidas em metros.</p>
+    </header>
+
+    <figure class="sheet">
+      <button type="button" class="paper" data-title="Vista Frontal" aria-label="Ampliar Vista Frontal"><img id="imgFrontal" src="cota-frontal-sem-led.svg" alt="Vista frontal cotada da estrutura" width="720" height="823"><span class="zoom-hint" aria-hidden="true">Ampliar</span></button>
+      <figcaption><span>Vista Frontal</span><span>Medidas em m · clique para ampliar</span></figcaption>
+    </figure>
+
+    <figure class="sheet">
+      <button type="button" class="paper" data-title="Vista Lateral" aria-label="Ampliar Vista Lateral"><img id="imgLateral" src="cota-lateral.svg" alt="Vista lateral cotada da estrutura" width="510" height="957"><span class="zoom-hint" aria-hidden="true">Ampliar</span></button>
+      <figcaption><span>Vista Lateral</span><span>Medidas em m · clique para ampliar</span></figcaption>
+    </figure>
+
+    <figure class="sheet">
+      <button type="button" class="paper" data-title="Vista Topo" aria-label="Ampliar Vista Topo"><img id="imgTopo" src="cota-topo-com-talha.svg" alt="Vista de topo cotada da estrutura" width="783" height="491"><span class="zoom-hint" aria-hidden="true">Ampliar</span></button>
+      <figcaption><span>Vista Topo</span><span>Medidas em m · clique para ampliar</span></figcaption>
+    </figure>
+
+    <figure class="sheet sheet-legend">
+      <div class="legend-wrap">
+        <table class="legend-table">
+          <caption class="sr-only">Legenda de componentes da estrutura com quantidades</caption>
+          <thead><tr><th scope="col">Símbolo</th><th scope="col">Componente</th><th scope="col" class="c-spec">Especificação</th><th scope="col" class="c-qty">Quant.</th></tr></thead>
+          <tbody>
+          <tr class="grp"><th colspan="4" scope="rowgroup">Estrutura</th></tr>
+          <tr><td class="c-sym"><svg class="sym" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><rect x="1.5" y="1.5" width="17" height="17" rx="1.5" fill="none" stroke="#c9ced6" stroke-width="1.4"/><rect x="5.5" y="7.5" width="9" height="5" fill="none" stroke="#c9ced6" stroke-width="1.2"/></svg></td><td class="c-name">Cubo Q30<span class="spec-inline">5 faces</span></td><td class="c-spec">5 faces</td><td class="c-qty">12</td></tr>
+          <tr><td class="c-sym"><svg class="sym" width="27" height="20" viewBox="0 0 27 20" aria-hidden="true"><rect x="1" y="3.5" width="25" height="13" fill="none" stroke="#cc99ff" stroke-width="1.4"/><polyline points="2,4 9,16 16,4 23,16" fill="none" stroke="#cc99ff" stroke-width="1"/></svg></td><td class="c-name">Box Truss Q30<span class="spec-inline">0,40 m</span></td><td class="c-spec">0,40 m</td><td class="c-qty">6</td></tr>
+          <tr><td class="c-sym"><svg class="sym" width="29" height="20" viewBox="0 0 29 20" aria-hidden="true"><rect x="1" y="3.5" width="27" height="13" fill="none" stroke="#2fae55" stroke-width="1.4"/><polyline points="2,4 9,16 16,4 23,16" fill="none" stroke="#2fae55" stroke-width="1"/></svg></td><td class="c-name">Box Truss Q30<span class="spec-inline">0,50 m</span></td><td class="c-spec">0,50 m</td><td class="c-qty">2</td></tr>
+          <tr><td class="c-sym"><svg class="sym" width="40" height="20" viewBox="0 0 40 20" aria-hidden="true"><rect x="1" y="3.5" width="38" height="13" fill="none" stroke="#ffaa00" stroke-width="1.4"/><polyline points="2,4 9,16 16,4 23,16 30,4 37,16" fill="none" stroke="#ffaa00" stroke-width="1"/></svg></td><td class="c-name">Box Truss Q30<span class="spec-inline">1,00 m</span></td><td class="c-spec">1,00 m</td><td class="c-qty">6</td></tr>
+          <tr><td class="c-sym"><svg class="sym" width="62" height="20" viewBox="0 0 62 20" aria-hidden="true"><rect x="1" y="3.5" width="60" height="13" fill="none" stroke="#9b5cff" stroke-width="1.4"/><polyline points="2,4 9,16 16,4 23,16 30,4 37,16 44,4 51,16 58,4" fill="none" stroke="#9b5cff" stroke-width="1"/></svg></td><td class="c-name">Box Truss Q30<span class="spec-inline">2,00 m</span></td><td class="c-spec">2,00 m</td><td class="c-qty">10</td></tr>
+          <tr><td class="c-sym"><svg class="sym" width="128" height="20" viewBox="0 0 128 20" aria-hidden="true"><rect x="1" y="3.5" width="126" height="13" fill="none" stroke="#ff3b30" stroke-width="1.4"/><polyline points="2,4 9,16 16,4 23,16 30,4 37,16 44,4 51,16 58,4 65,16 72,4 79,16 86,4 93,16 100,4 107,16 114,4 121,16" fill="none" stroke="#ff3b30" stroke-width="1"/></svg></td><td class="c-name">Box Truss Q30<span class="spec-inline">5,00 m</span></td><td class="c-spec">5,00 m</td><td class="c-qty">7</td></tr>
+          <tr class="grp"><th colspan="4" scope="rowgroup">Lastro</th></tr>
+          <tr><td class="c-sym"><svg class="sym" width="30" height="22" viewBox="0 0 30 22" aria-hidden="true"><path d="M3 7 Q15 1 27 7" fill="none" stroke="#c9ced6" stroke-width="1.2"/><rect x="2" y="7" width="26" height="3" fill="none" stroke="#c9ced6" stroke-width="1.2"/><path d="M5 10 L7 20 H23 L25 10" fill="rgba(91,163,201,0.15)" stroke="#5ba3c9" stroke-width="1.4"/></svg></td><td class="c-name">Caixa d’água<span class="spec-inline">1000 litros</span></td><td class="c-spec">1000 litros</td><td class="c-qty">2</td></tr>
+          <tr class="grp"><th colspan="4" scope="rowgroup">Cabos e fixações</th></tr>
+          <tr><td class="c-sym"><svg class="sym" width="34" height="20" viewBox="0 0 34 20" aria-hidden="true"><line x1="3" y1="17" x2="31" y2="3" stroke="#c9ced6" stroke-width="1.2"/><circle cx="3" cy="17" r="1.8" fill="#c9ced6"/><circle cx="31" cy="3" r="1.8" fill="#c9ced6"/></svg></td><td class="c-name">Cabo de aço<span class="spec-inline">Frente / trás</span></td><td class="c-spec">Frente / trás</td><td class="c-qty">4</td></tr>
+          <tr><td class="c-sym"><svg class="sym" width="34" height="20" viewBox="0 0 34 20" aria-hidden="true"><line x1="3" y1="17" x2="31" y2="3" stroke="#c9ced6" stroke-width="1.2"/><circle cx="3" cy="17" r="1.8" fill="#c9ced6"/><circle cx="31" cy="3" r="1.8" fill="#c9ced6"/></svg></td><td class="c-name">Cabo de aço<span class="spec-inline">Lateral</span></td><td class="c-spec">Lateral</td><td class="c-qty">6</td></tr>
+          <tr><td class="c-sym"><svg class="sym" width="12" height="22" viewBox="0 0 12 22" aria-hidden="true"><rect x="3" y="1" width="6" height="20" rx="2" fill="#2c3036" stroke="#c9ced6" stroke-width="1.2"/><line x1="3" y1="7" x2="9" y2="7" stroke="#c9ced6" stroke-width="1"/></svg></td><td class="c-name">Cinta Box<span class="spec-inline">Q30</span></td><td class="c-spec">Q30</td><td class="c-qty">2</td></tr>
+          <tr><td class="c-sym"><svg class="sym" width="12" height="16" viewBox="0 0 12 16" aria-hidden="true"><rect x="3" y="2" width="6" height="12" rx="3" fill="#2c3036" stroke="#c9ced6" stroke-width="1.2"/></svg></td><td class="c-name">Cinta Bumper<span class="spec-inline">Q30</span></td><td class="c-spec">Q30</td><td class="c-qty">10</td></tr>
+          <tr><td class="c-sym"><svg class="sym" width="20" height="22" viewBox="0 0 20 22" aria-hidden="true"><line x1="3" y1="3" x2="17" y2="3" stroke="#c9ced6" stroke-width="2"/><line x1="10" y1="3" x2="10" y2="14" stroke="#c9ced6" stroke-width="1.6"/><circle cx="10" cy="17.5" r="3" fill="none" stroke="#c9ced6" stroke-width="1.4"/></svg></td><td class="c-name">Grepo<span class="spec-inline">Com olhal</span></td><td class="c-spec">Com olhal</td><td class="c-qty">4</td></tr>
+          <tr><td class="c-sym"><svg class="sym" width="34" height="18" viewBox="0 0 34 18" aria-hidden="true"><rect x="2" y="9" width="30" height="5" fill="none" stroke="#c9ced6" stroke-width="1.4"/><path d="M13 9 Q17 2 21 9" fill="none" stroke="#c9ced6" stroke-width="1.4"/><circle cx="7" cy="11.5" r="1" fill="#c9ced6"/><circle cx="27" cy="11.5" r="1" fill="#c9ced6"/></svg></td><td class="c-name">Bumper<span class="spec-inline">—</span></td><td class="c-spec">—</td><td class="c-qty">10</td></tr>
+          <tr><td class="c-sym"><svg class="sym" width="28" height="14" viewBox="0 0 28 14" aria-hidden="true"><polygon points="2,7 5,2 10,2 13,7 10,12 5,12" fill="none" stroke="#c9ced6" stroke-width="1.2"/><line x1="13" y1="7" x2="26" y2="7" stroke="#c9ced6" stroke-width="2.4"/></svg></td><td class="c-name">Parafuso sextavado<span class="spec-inline">Ø 5/8</span></td><td class="c-spec">Ø 5/8</td><td class="c-qty">192</td></tr>
+          <tr class="grp"><th colspan="4" scope="rowgroup">Painel e içamento</th></tr>
+          <tr><td class="c-sym"><svg class="sym" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><rect x="1.5" y="1.5" width="17" height="17" fill="rgba(171,128,85,0.18)" stroke="#b98a5b" stroke-width="1.4"/></svg></td><td class="c-name">Painel de LED<span class="spec-inline">0,50 × 0,50 m</span></td><td class="c-spec">0,50 × 0,50 m</td><td class="c-qty">60</td></tr>
+          <tr><td class="c-sym"><svg class="sym" width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="9" fill="none" stroke="#c9ced6" stroke-width="1.4"/><path d="M11 11 L11 2 A9 9 0 0 1 20 11 Z" fill="#5b8fd9"/><path d="M11 11 L11 20 A9 9 0 0 1 2 11 Z" fill="#5b8fd9"/></svg></td><td class="c-name">Talha<span class="spec-inline">—</span></td><td class="c-spec">—</td><td class="c-qty">2</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <figcaption><span>Legenda</span><span>Quantidades totais</span></figcaption>
+      <div class="legend-actions" id="legendActions" hidden>
+        <span class="export-status" id="exportStatus" role="status" aria-live="polite"></span>
+        <button type="button" class="btn-export" id="btnExport">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M7 1.5v7.5M7 9l-3-3M7 9l3-3M2 11.5h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Exportar planilha (.xlsx)
+        </button>
+      </div>
+    </figure>
+  </div>
+</section>
+
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-labelledby="lbTitle" hidden>
+  <div class="lb-bar">
+    <span class="lb-title" id="lbTitle">Vista</span>
+    <div class="lb-actions">
+      <button type="button" id="lbOut" aria-label="Diminuir zoom">−</button>
+      <button type="button" id="lbReset" aria-label="Ajustar à tela">Ajustar</button>
+      <button type="button" id="lbIn" aria-label="Aumentar zoom">+</button>
+      <button type="button" id="lbClose" class="lb-close">Fechar</button>
+    </div>
+  </div>
+  <div class="lb-stage" id="lbStage"><img id="lbImg" alt="" draggable="false"></div>
+  <p class="lb-hint">Role ou use + / − para dar zoom · arraste para mover · Esc fecha</p>
+</div>
+
+<div class="hud" id="hud">
+  <div class="topbar">
+    <div class="brand"><span class="dot"></span> Sistema de Apresentação <b>Estrutural</b></div>
+    <div class="topbar-right">
+      <div class="stage-toggle" id="stageToggle" role="group" aria-label="Etapa do modelo">
+        <button type="button" data-stage="comeco" aria-pressed="true">Começo</button>
+        <button type="button" data-stage="final" aria-pressed="false">Final</button>
+      </div>
+      <div class="badge" id="badge">Vista 01 / 04</div>
+    </div>
+  </div>
+
+  <div class="crosshair"><i></i><i></i><i></i></div>
+
+  <div class="intro-mark" id="introMark">
+    <p class="eyebrow">Estrutura treliçada · Painel de LED</p>
+    <h1>Estrutura LED 5×3</h1>
+    <p>Role a página para ver as vistas frontal, lateral, de topo e isométrica — e, no final, os desenhos com as cotas.</p>
+  </div>
+
+  <nav class="railnav" id="railnav" aria-label="Navegação entre vistas"></nav>
+
+  <div class="panels" id="panels"></div>
+
+  <div class="telemetry" id="telemetry">
+    <span>CAM <b id="tCam">—</b></span>
+    <span>ALVO <b id="tTarget">—</b></span>
+    <span>FOV <b id="tFov">—</b></span>
+  </div>
+
+  <div class="loader" id="loader" role="status" aria-live="polite">
+    <span class="loader-label" id="loaderLabel">Carregando modelo 3D</span>
+    <span class="loader-bar"><i id="loaderFill"></i></span>
+  </div>
+
+  <div class="scrollhint" id="scrollhint">
+    <span>Role para explorar</span>
+    <svg width="14" height="18" viewBox="0 0 14 18" fill="none"><path d="M7 1V17M7 17L1 11M7 17L13 11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </div>
+
+  <div class="progress-rail"><div class="progress-fill" id="progressFill"></div></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  /* ---------------------------------------------------------------
+     ESTRUTURA LED 5×3 — apresentação estrutural por scroll
+     ---------------------------------------------------------------
+     Motor padrão (igual ao modelo Galpão Horizonte): câmera que
+     percorre VIEWS conforme a rolagem, painéis de texto em crossfade,
+     navegação lateral, telemetria e barra de progresso.
+
+     Duas etapas do mesmo projeto (chave "Começo / Final" no topo):
+       - Começo: "Teste Site Estruturas 2 - Começo.obj"
+       - Final:  "Teste Site Estruturas 2 - Final.obj"
+     Os OBJ do Vectorworks (mm, Z para cima) foram convertidos para
+     arquivos otimizados (gzip + base64), em metros, Y para cima, num
+     mesmo referencial — as duas etapas se sobrepõem exatamente.
+
+     Depois das vistas 3D, a página mostra os desenhos cotados
+     (frontal sem LED, lateral e topo da etapa selecionada) e a legenda.
+  ----------------------------------------------------------------*/
+
+  var REDUCED_MOTION = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var STAGES = {
+    comeco: {
+      url: 'model-comeco.b64.txt',
+      topo:    { src: 'cota-topo-com-talha.svg',  w: 783, h: 491 }
+    },
+    final: {
+      url: 'model-final.b64.txt',
+      topo:    { src: 'cota-topo-sem-talha.svg',  w: 783, h: 512 }
+    }
+  };
+  var activeStage = 'comeco';
+
+  // Caixa de enquadramento das câmeras (envelope da estrutura), em metros.
+  // A câmera sempre mira o centro desta caixa — a estrutura fica no centro da tela.
+  var FIT_MIN = [-2.5, 0, -1.27];
+  var FIT_MAX = [ 2.5, 5.905, 1.27];
+  var FIT_CENTER = [0, 2.9525, 0];
+
+  // Eixos das torres (em metros, espaço da cena) — usados nas bolhas de eixo.
+  var AXES_X = [-2.32, 0, 2.32];      // eixos 1, 2, 3
+  var AXES_Z = [0.62, -1.10];         // eixos A (frente), B (fundo)
+
+  var COLORS = {
+    bg: 0x0a0c0f,
+    ground: 0x14171c
+  };
+
+  /* ----------------------------- Cena base ----------------------------- */
+
+  var canvas = document.getElementById('scene');
+  var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias:true, alpha:false });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  if (THREE.sRGBEncoding) renderer.outputEncoding = THREE.sRGBEncoding;
+  if (THREE.ACESFilmicToneMapping){
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.05;
+  }
+
+  var scene = new THREE.Scene();
+  scene.background = new THREE.Color(COLORS.bg);
+  scene.fog = new THREE.Fog(COLORS.bg, 60, 160);
+
+  var camera = new THREE.PerspectiveCamera(24, window.innerWidth/window.innerHeight, 0.05, 400);
+
+  function resize(){
+    var w = window.innerWidth, h = window.innerHeight;
+    renderer.setSize(w, h);
+    camera.aspect = w/h;
+    camera.updateProjectionMatrix();
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  /* ----------------------------- Luz ----------------------------- */
+
+  scene.add(new THREE.HemisphereLight(0x5b6776, 0x0c0d10, 0.75));
+
+  var sun = new THREE.DirectionalLight(0xfff2e2, 1.2);
+  sun.position.set(7, 12, 9);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.camera.left = -6;
+  sun.shadow.camera.right = 6;
+  sun.shadow.camera.top = 6;
+  sun.shadow.camera.bottom = -6;
+  sun.shadow.camera.near = 2;
+  sun.shadow.camera.far = 40;
+  sun.shadow.bias = -0.0008;
+  sun.shadow.normalBias = 0.02;
+  scene.add(sun);
+  sun.target.position.set(0, 2.5, 0);
+  scene.add(sun.target);
+
+  var rim = new THREE.DirectionalLight(0x6f8dab, 0.4);
+  rim.position.set(-8, 5, -7);
+  scene.add(rim);
+
+  /* ----------------------------- Materiais ----------------------------- */
+
+  var matGround = new THREE.MeshStandardMaterial({ color: COLORS.ground, metalness:0.0, roughness:1.0 });
+
+  function shadowMesh(geo, mat){
+    var m = new THREE.Mesh(geo, mat);
+    m.castShadow = true;
+    m.receiveShadow = true;
+    return m;
+  }
+
+  /* ------------------------- Cenário (piso, eixos, escala) ------------------------- */
+
+  var structure = new THREE.Group();
+  var gridStuff = new THREE.Group(); // elementos que só interessam na vista de topo
+
+  function buildSetting(){
+    var ground = shadowMesh(new THREE.PlaneGeometry(80, 80), matGround);
+    ground.rotation.x = -Math.PI/2;
+    ground.position.y = -0.003;
+    structure.add(ground);
+
+    var grid = new THREE.GridHelper(40, 40, 0x3a4048, 0x2a2f36);
+    grid.position.y = 0.0;
+    grid.material.transparent = true;
+    grid.material.opacity = 0.35;
+    gridStuff.add(grid);
+
+    function makeLabel(text){
+      var c = document.createElement('canvas');
+      c.width = 128; c.height = 128;
+      var ctx = c.getContext('2d');
+      ctx.clearRect(0,0,128,128);
+      ctx.fillStyle = 'rgba(10,12,15,0.72)';
+      ctx.beginPath(); ctx.arc(64,64,46,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,106,43,0.9)';
+      ctx.lineWidth = 5;
+      ctx.stroke();
+      ctx.fillStyle = '#eef1f4';
+      ctx.font = '600 52px IBM Plex Mono, monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, 64, 68);
+      var tex = new THREE.CanvasTexture(c);
+      var mat = new THREE.SpriteMaterial({ map: tex, transparent:true, depthTest:false });
+      var sprite = new THREE.Sprite(mat);
+      sprite.scale.set(0.5,0.5,0.5);
+      return sprite;
+    }
+
+    AXES_X.forEach(function(x, i){
+      var lab = makeLabel(String(i+1));
+      lab.position.set(x, 0.05, 1.6);
+      gridStuff.add(lab);
+    });
+    ['A','B'].forEach(function(letter, i){
+      var lab = makeLabel(letter);
+      lab.position.set(-2.8, 0.05, AXES_Z[i]);
+      gridStuff.add(lab);
+    });
+
+    structure.add(gridStuff);
+
+    scene.add(structure);
+  }
+
+  buildSetting();
+
+  /* ------------------------- Modelos 3D (duas etapas) ------------------------- */
+
+  var loaderEl = document.getElementById('loader');
+  var loaderLabelEl = document.getElementById('loaderLabel');
+  var loaderFillEl = document.getElementById('loaderFill');
+
+  function srgbColor(rgb){
+    var c = new THREE.Color();
+    c.setRGB(rgb[0], rgb[1], rgb[2]);
+    if (c.convertSRGBToLinear) c.convertSRGBToLinear();
+    return c;
+  }
+
+  function fetchWithProgress(url, onProgress){
+    return fetch(url).then(function(res){
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      var total = parseInt(res.headers.get('content-length') || '0', 10);
+      if (!res.body || !res.body.getReader) return res.arrayBuffer();
+      var reader = res.body.getReader(), chunks = [], received = 0;
+      function pump(){
+        return reader.read().then(function(r){
+          if (r.done){
+            var out = new Uint8Array(received), o = 0;
+            chunks.forEach(function(c){ out.set(c, o); o += c.length; });
+            return out.buffer;
+          }
+          chunks.push(r.value); received += r.value.length;
+          if (total && onProgress) onProgress(Math.min(1, received/total));
+          return pump();
+        });
+      }
+      return pump();
+    });
+  }
+
+  function fromBase64(buf){
+    var txt = new TextDecoder().decode(new Uint8Array(buf)).replace(/\s+/g, '');
+    var bin = atob(txt);
+    var out = new Uint8Array(bin.length);
+    for (var i=0;i<bin.length;i++) out[i] = bin.charCodeAt(i);
+    return out.buffer;
+  }
+
+  function maybeGunzip(buf){
+    var b = new Uint8Array(buf, 0, 2);
+    if (b[0] === 0x1f && b[1] === 0x8b){
+      if (typeof DecompressionStream === 'undefined') throw new Error('Navegador sem suporte a gzip');
+      var stream = new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip'));
+      return new Response(stream).arrayBuffer();
+    }
+    return Promise.resolve(buf);
+  }
+
+  function buildModel(buf){
+    var dv = new DataView(buf);
+    var magic = String.fromCharCode(dv.getUint8(0), dv.getUint8(1), dv.getUint8(2), dv.getUint8(3));
+    if (magic !== 'STRM') throw new Error('Arquivo de modelo inválido');
+    var hlen = dv.getUint32(4, true);
+    var header = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 8, hlen)));
+    var base = 8 + hlen;
+    var bmin = header.bboxMin, bmax = header.bboxMax;
+    var span = [bmax[0]-bmin[0], bmax[1]-bmin[1], bmax[2]-bmin[2]];
+
+    var materials = {};
+    Object.keys(header.materials).forEach(function(name){
+      materials[name] = new THREE.MeshStandardMaterial({
+        color: srgbColor(header.materials[name]),
+        metalness: 0.25,
+        roughness: 0.5,
+        side: THREE.DoubleSide
+      });
+    });
+
+    var model = new THREE.Group();
+    header.chunks.forEach(function(c){
+      var q = new Uint16Array(buf, base + c.posOffset, c.vcount*3);
+      var pos = new Float32Array(c.vcount*3);
+      for (var i=0;i<c.vcount;i++){
+        pos[i*3]   = bmin[0] + q[i*3]   / 65535 * span[0];
+        pos[i*3+1] = bmin[1] + q[i*3+1] / 65535 * span[1];
+        pos[i*3+2] = bmin[2] + q[i*3+2] / 65535 * span[2];
+      }
+      var nor = new Int8Array(buf, base + c.norOffset, c.vcount*3);
+      var idx = new Uint16Array(buf, base + c.idxOffset, c.icount);
+      var g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      g.setAttribute('normal', new THREE.BufferAttribute(new Int8Array(nor), 3, true));
+      g.setIndex(new THREE.BufferAttribute(new Uint16Array(idx), 1));
+      g.computeBoundingSphere();
+      var mesh = new THREE.Mesh(g, materials[c.mat]);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      model.add(mesh);
+    });
+    return model;
+  }
+
+  var models = {};    // etapa -> THREE.Group
+  var loading = {};   // etapa -> Promise
+
+  function loadStage(stage, showProgress){
+    if (loading[stage]) return loading[stage];
+    loading[stage] = fetchWithProgress(STAGES[stage].url, showProgress ? function(f){
+        loaderFillEl.style.width = (f*100).toFixed(1) + '%';
+      } : null)
+      .then(fromBase64)
+      .then(maybeGunzip)
+      .then(function(buf){
+        var m = buildModel(buf);
+        m.visible = (stage === activeStage);
+        structure.add(m);
+        models[stage] = m;
+        return m;
+      });
+    loading[stage].catch(function(){ delete loading[stage]; });
+    return loading[stage];
+  }
+
+  function showLoader(){
+    loaderLabelEl.textContent = 'Carregando modelo 3D';
+    loaderFillEl.style.width = '0%';
+    loaderEl.classList.remove('done', 'error');
+  }
+  function loaderError(err){
+    loaderLabelEl.textContent = 'Não foi possível carregar o modelo 3D (' + err.message + ')';
+    loaderEl.classList.add('error');
+  }
+
+  function otherStage(s){ return s === 'comeco' ? 'final' : 'comeco'; }
+
+  showLoader();
+  loadStage(activeStage, true)
+    .then(function(){
+      loaderEl.classList.add('done');
+      loadStage(otherStage(activeStage), false); // pré-carrega a outra etapa
+    })
+    .catch(loaderError);
+
+  /* ------------------------- Chave de etapa + desenhos cotados ------------------------- */
+
+  var toggleButtons = Array.prototype.slice.call(document.querySelectorAll('#stageToggle button'));
+  var imgTopo = document.getElementById('imgTopo');
+
+  function applyStage(stage){
+    activeStage = stage;
+    toggleButtons.forEach(function(b){ b.setAttribute('aria-pressed', String(b.getAttribute('data-stage') === stage)); });
+    Object.keys(models).forEach(function(k){ models[k].visible = (k === stage); });
+    var s = STAGES[stage];
+    imgTopo.src = s.topo.src; imgTopo.width = s.topo.w; imgTopo.height = s.topo.h;
+    if (!models[stage]){
+      showLoader();
+      loadStage(stage, true)
+        .then(function(){ if (activeStage === stage) loaderEl.classList.add('done'); })
+        .catch(loaderError);
+    }
+  }
+
+  toggleButtons.forEach(function(b){
+    b.addEventListener('click', function(){ applyStage(b.getAttribute('data-stage')); });
+  });
+
+  /* ----------------------------- Vistas ----------------------------- */
+  // az: azimute (0 = frente, -90 = lado esquerdo), el: elevação, em graus.
+  // A distância da câmera é calculada para enquadrar FIT_MIN/FIT_MAX em qualquer tela.
+
+  var VIEWS = [
+    {
+      id: 'frontal',
+      az: 0, el: 0, fov: 24,
+      kicker: '01 / 04 — Vista Frontal',
+      title: 'Estrutura em Box Truss Q30',
+      desc: 'Três pares de torres de 5 m sustentam o quadro superior. À frente, a treliça do painel de LED é içada por duas talhas.',
+      specs: ['Largura <b>5,00 m</b>', 'Altura <b>5,90 m</b>', 'Vãos <b>2 × 2,00 m</b>']
+    },
+    {
+      id: 'lateral',
+      az: -90, el: 0, fov: 24,
+      kicker: '02 / 04 — Vista Lateral',
+      title: 'Profundidade e Balanço',
+      desc: 'Os braços superiores avançam 0,50 m além das torres para receber as talhas. Na posição final, o painel de 3 m fica com a base a 1,85 m do piso.',
+      specs: ['Profundidade <b>2,50 m</b>', 'Base <b>2,02 m</b>', 'Painel <b>3,00 m</b>']
+    },
+    {
+      id: 'topo',
+      az: 0, el: 89.9, fov: 24,
+      kicker: '03 / 04 — Vista Topo',
+      title: 'Planta da Estrutura',
+      desc: 'A base de 4,96 × 2,02 m recebe quatro praticáveis e duas caixas d’água de 1000 litros, que servem de lastro.',
+      specs: ['Base <b>4,96 × 2,02 m</b>', '<b>2</b> caixas d’água 1000 L', '<b>12</b> cubos Q30']
+    },
+    {
+      id: 'isometrica',
+      az: -45, el: 35.26, fov: 30,
+      kicker: '04 / 04 — Vista Isométrica',
+      title: 'Visão de Conjunto',
+      desc: 'Conjunto com 31 segmentos de box truss Q30, 60 módulos de LED de 0,50 × 0,50 m e cabos de aço de travamento.',
+      specs: ['<b>31</b> segmentos Q30', '<b>60</b> módulos de LED', '<b>10</b> cabos de aço']
+    }
+  ];
+
+  var N = VIEWS.length;
+
+  /* ------------------------- Enquadramento ------------------------- */
+
+  var DEG = Math.PI/180;
+  var fitCorners = [];
+  [0,1].forEach(function(i){ [0,1].forEach(function(j){ [0,1].forEach(function(k){
+    fitCorners.push([
+      (i ? FIT_MAX[0] : FIT_MIN[0]) - FIT_CENTER[0],
+      (j ? FIT_MAX[1] : FIT_MIN[1]) - FIT_CENTER[1],
+      (k ? FIT_MAX[2] : FIT_MIN[2]) - FIT_CENTER[2]
+    ]);
+  }); }); });
+
+  function viewDir(az, el){
+    var a = az*DEG, e = el*DEG;
+    return [Math.sin(a)*Math.cos(e), Math.sin(e), Math.cos(a)*Math.cos(e)];
+  }
+
+  // Distância para a câmera enquadrar a caixa de ajuste, dado o aspecto útil da tela.
+  function fitDistance(az, el, fov){
+    var aspect = window.innerWidth / window.innerHeight;
+    var d = viewDir(az, el);
+    var f = [-d[0], -d[1], -d[2]];
+    var r = [-f[2], 0, f[0]];                       // f × (0,1,0)
+    var rl = Math.hypot(r[0], r[2]) || 1; r = [r[0]/rl, 0, r[2]/rl];
+    var u = [r[1]*f[2]-r[2]*f[1], r[2]*f[0]-r[0]*f[2], r[0]*f[1]-r[1]*f[0]];
+    var hw = 0, hh = 0, hd = 0;
+    fitCorners.forEach(function(c){
+      hw = Math.max(hw, Math.abs(c[0]*r[0] + c[1]*r[1] + c[2]*r[2]));
+      hh = Math.max(hh, Math.abs(c[0]*u[0] + c[1]*u[1] + c[2]*u[2]));
+      hd = Math.max(hd, Math.abs(c[0]*d[0] + c[1]*d[1] + c[2]*d[2]));
+    });
+    var t = Math.tan(fov*DEG/2);
+    return Math.max(hh / t, hw / (t*aspect)) * 1.12 + hd;
+  }
+
+
+  /* ------------------------- Construção do HUD ------------------------- */
+
+  var hudEl = document.getElementById('hud');
+  var panelsEl = document.getElementById('panels');
+  var railEl = document.getElementById('railnav');
+  var track = document.getElementById('track');
+  var cotasEl = document.getElementById('cotas');
+  track.style.height = (N * 130) + 'vh';
+
+  var panelNodes = VIEWS.map(function(v, i){
+    var el = document.createElement('div');
+    el.className = 'panel';
+    el.innerHTML =
+      '<p class="kicker">'+v.kicker+'</p>' +
+      '<h2>'+v.title+'</h2>' +
+      '<p>'+v.desc+'</p>' +
+      '<ul class="specs">'+v.specs.map(function(s){ return '<li>'+s+'</li>'; }).join('')+'</ul>';
+    panelsEl.appendChild(el);
+    return el;
+  });
+
+  function trackMax(){ return Math.max(1, track.offsetHeight - window.innerHeight); }
+
+  var RAIL_ITEMS = VIEWS.map(function(v){ return v.kicker.split(' — ')[1]; }).concat(['Cotas e Legenda']);
+  var railButtons = RAIL_ITEMS.map(function(label, i){
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.innerHTML = '<span class="rn-num">'+(i+1<10?'0'+(i+1):(i+1))+' — '+label+'</span><span class="rn-tick"></span>';
+    btn.addEventListener('click', function(){
+      var target = i < N ? (i/(N-1)) * trackMax() : cotasEl.offsetTop;
+      window.scrollTo({ top: target, behavior: REDUCED_MOTION ? 'auto' : 'smooth' });
+    });
+    railEl.appendChild(btn);
+    return btn;
+  });
+
+  var badgeEl = document.getElementById('badge');
+  var introEl = document.getElementById('introMark');
+  var scrollhintEl = document.getElementById('scrollhint');
+  var progressFillEl = document.getElementById('progressFill');
+  var tCam = document.getElementById('tCam');
+  var tTarget = document.getElementById('tTarget');
+  var tFov = document.getElementById('tFov');
+
+  /* ------------------------------ Loop ------------------------------ */
+
+  function smootherstep(t){
+    t = Math.max(0, Math.min(1, t));
+    return t*t*t*(t*(t*6-15)+10);
+  }
+
+  var mouseNX = 0, mouseNY = 0;   // posição do mouse (-1 a 1)
+  var smoothNX = 0, smoothNY = 0; // posição suavizada usada pela câmera
+  var MOUSE_ORBIT_AZ = 20;  // graus de giro horizontal nos extremos da tela
+  var MOUSE_ORBIT_EL = 20;  // graus de giro vertical nos extremos da tela
+  if (!REDUCED_MOTION){
+    window.addEventListener('mousemove', function(e){
+      mouseNX = (e.clientX / window.innerWidth) * 2 - 1;
+      mouseNY = (e.clientY / window.innerHeight) * 2 - 1;
+    });
+  }
+
+  var scrolled = false;
+
+  function currentProgress(){
+    return Math.max(0, Math.min(1, window.scrollY / trackMax()));
+  }
+
+  function frame(){
+    var progress = currentProgress();
+    if (progress > 0.002 && !scrolled){
+      scrolled = true;
+      scrollhintEl.style.opacity = '0';
+      introEl.style.opacity = '0';
+      introEl.style.transform = 'translateY(-50%) translateX(-16px)';
+    }
+
+    // fim das vistas 3D → desenhos cotados
+    var cotasTop = cotasEl.getBoundingClientRect().top;
+    var inDoc = cotasTop < window.innerHeight * 0.6;
+    hudEl.classList.toggle('in-doc', inDoc);
+
+    var continuous = progress * (N - 1);
+    var idx = Math.min(N - 2, Math.floor(continuous));
+    if (idx < 0) idx = 0;
+    var frac = smootherstep(continuous - idx);
+
+    var a = VIEWS[idx], b = VIEWS[Math.min(N-1, idx+1)];
+
+    var az = THREE.MathUtils.lerp(a.az, b.az, frac);
+    var el = THREE.MathUtils.lerp(a.el, b.el, frac);
+    var fov = THREE.MathUtils.lerp(a.fov, b.fov, frac);
+    var dist = THREE.MathUtils.lerp(
+      fitDistance(a.az, a.el, a.fov),
+      fitDistance(b.az, b.el, b.fov), frac);
+
+    if (!REDUCED_MOTION){
+      smoothNX += (mouseNX - smoothNX) * 0.08;
+      smoothNY += (mouseNY - smoothNY) * 0.08;
+      az += smoothNX * MOUSE_ORBIT_AZ;
+      el = Math.max(0, Math.min(89.9, el - smoothNY * MOUSE_ORBIT_EL)); // nunca abaixo do piso
+    }
+
+    var dir = viewDir(az, el);
+    var tx = FIT_CENTER[0], ty = FIT_CENTER[1], tz = FIT_CENTER[2];
+    var px = tx + dir[0]*dist, py = ty + dir[1]*dist, pz = tz + dir[2]*dist;
+
+    var w = window.innerWidth, h = window.innerHeight;
+    camera.position.set(px, py, pz);
+    camera.up.set(0,1,0);
+    camera.lookAt(tx, ty, tz);
+    camera.fov = fov;
+    camera.aspect = w/h;
+    camera.far = Math.max(400, dist*3);
+    camera.updateProjectionMatrix();
+
+    // grid / eixos só relevantes perto da vista de topo
+    var distFromTop = Math.abs(continuous - 2);
+    gridStuff.visible = distFromTop < 1.6;
+    gridStuff.children.forEach(function(child){
+      if (child.material) child.material.opacity = Math.max(0, 1 - distFromTop/1.4) * (child.type === 'GridHelper' ? 0.35 : 1);
+    });
+
+    // painéis: crossfade
+    var activeIdx = -1, best = 1e9;
+    for (var i=0;i<N;i++){
+      var d = Math.abs(continuous - i);
+      var visible = d < 0.5;
+      panelNodes[i].classList.toggle('on', visible);
+      if (d < best){ best = d; activeIdx = i; }
+    }
+    railButtons.forEach(function(btn, i){ btn.classList.toggle('active', inDoc ? i === N : i === activeIdx); });
+    badgeEl.textContent = inDoc ? 'Cotas' : 'Vista ' + (activeIdx+1<10?'0'+(activeIdx+1):(activeIdx+1)) + ' / ' + (N<10?'0'+N:N);
+
+    progressFillEl.style.width = (progress*100).toFixed(2) + '%';
+
+    tCam.textContent = px.toFixed(1)+', '+py.toFixed(1)+', '+pz.toFixed(1);
+    tTarget.textContent = tx.toFixed(1)+', '+ty.toFixed(1)+', '+tz.toFixed(1);
+    tFov.textContent = fov.toFixed(0)+'°';
+
+    if (cotasTop > 0) renderer.render(scene, camera);
+    requestAnimationFrame(frame);
+  }
+
+  requestAnimationFrame(frame);
+
+
+  /* ---------- Desenhos cotados: ampliar com zoom ---------- */
+
+  (function setupLightbox(){
+    var lb = document.getElementById('lightbox');
+    var stage = document.getElementById('lbStage');
+    var img = document.getElementById('lbImg');
+    var title = document.getElementById('lbTitle');
+    var btnIn = document.getElementById('lbIn'), btnOut = document.getElementById('lbOut');
+    var btnReset = document.getElementById('lbReset'), btnClose = document.getElementById('lbClose');
+    var st = { s: 1, tx: 0, ty: 0, fit: 1, w: 1, h: 1 };
+    var MAX = 8, trigger = null;
+
+    function apply(){
+      var w = st.w * st.fit * st.s, h = st.h * st.fit * st.s;   // tamanho real (nítido): proporção sempre mantida
+      img.style.width = w + 'px';
+      img.style.height = h + 'px';
+      img.style.transform = 'translate(' + (st.tx - w/2) + 'px,' + (st.ty - h/2) + 'px)';
+    }
+    function fitNow(){
+      var r = stage.getBoundingClientRect();
+      st.fit = Math.min((r.width * 0.94) / st.w, (r.height * 0.94) / st.h);
+    }
+    function zoomAt(factor, cx, cy){
+      var ns = Math.max(1, Math.min(MAX, st.s * factor));
+      var k = ns / st.s;
+      st.tx = cx - (cx - st.tx) * k;
+      st.ty = cy - (cy - st.ty) * k;
+      st.s = ns;
+      if (st.s === 1){ st.tx = 0; st.ty = 0; }
+      apply();
+    }
+    function local(e){
+      var r = stage.getBoundingClientRect();
+      return { x: e.clientX - r.left - r.width/2, y: e.clientY - r.top - r.height/2 };
+    }
+    function open(src, w, h, label, from){
+      trigger = from;
+      title.textContent = label;
+      img.alt = label + ' cotada';
+      img.src = src;
+      st.w = w; st.h = h; st.s = 1; st.tx = 0; st.ty = 0;
+      lb.hidden = false;
+      document.documentElement.style.overflow = 'hidden';
+      fitNow(); apply();
+      btnClose.focus();
+    }
+    function close(){
+      lb.hidden = true;
+      document.documentElement.style.overflow = '';
+      if (trigger) trigger.focus();
+    }
+
+    Array.prototype.forEach.call(document.querySelectorAll('.sheet .paper'), function(btn){
+      btn.addEventListener('click', function(){
+        var im = btn.querySelector('img');
+        open(im.getAttribute('src'), +im.getAttribute('width'), +im.getAttribute('height'), btn.getAttribute('data-title'), btn);
+      });
+    });
+
+    btnClose.addEventListener('click', close);
+    btnIn.addEventListener('click', function(){ zoomAt(1.5, 0, 0); });
+    btnOut.addEventListener('click', function(){ zoomAt(1/1.5, 0, 0); });
+    btnReset.addEventListener('click', function(){ st.s = 1; st.tx = 0; st.ty = 0; apply(); });
+    window.addEventListener('keydown', function(e){
+      if (lb.hidden) return;
+      if (e.key === 'Escape') close();
+      else if (e.key === '+' || e.key === '=') zoomAt(1.25, 0, 0);
+      else if (e.key === '-') zoomAt(0.8, 0, 0);
+      else if (e.key === 'Tab'){
+        var f = lb.querySelectorAll('button'), first = f[0], last = f[f.length-1];
+        if (e.shiftKey && document.activeElement === first){ last.focus(); e.preventDefault(); }
+        else if (!e.shiftKey && document.activeElement === last){ first.focus(); e.preventDefault(); }
+      }
+    });
+    window.addEventListener('resize', function(){ if (!lb.hidden){ fitNow(); apply(); } });
+
+    stage.addEventListener('wheel', function(e){
+      e.preventDefault();
+      var p = local(e);
+      zoomAt(e.deltaY < 0 ? 1.15 : 1/1.15, p.x, p.y);
+    }, { passive: false });
+
+    stage.addEventListener('dblclick', function(e){
+      var p = local(e);
+      if (st.s > 1){ st.s = 1; st.tx = 0; st.ty = 0; apply(); }
+      else zoomAt(2.5, p.x, p.y);
+    });
+
+    // arrastar (mouse / 1 dedo) e pinça (2 dedos)
+    var pts = {}, last = null, pinch = null;
+    stage.addEventListener('pointerdown', function(e){
+      stage.setPointerCapture(e.pointerId);
+      pts[e.pointerId] = local(e);
+      var ids = Object.keys(pts);
+      if (ids.length === 1){ last = pts[ids[0]]; stage.classList.add('dragging'); }
+      if (ids.length === 2){
+        var a = pts[ids[0]], b = pts[ids[1]];
+        pinch = { d: Math.hypot(a.x-b.x, a.y-b.y) };
+      }
+    });
+    stage.addEventListener('pointermove', function(e){
+      if (!pts[e.pointerId]) return;
+      pts[e.pointerId] = local(e);
+      var ids = Object.keys(pts);
+      if (ids.length === 2 && pinch){
+        var a = pts[ids[0]], b = pts[ids[1]];
+        var d = Math.hypot(a.x-b.x, a.y-b.y);
+        if (pinch.d > 0) zoomAt(d / pinch.d, (a.x+b.x)/2, (a.y+b.y)/2);
+        pinch.d = d;
+      } else if (ids.length === 1 && last){
+        var p = pts[ids[0]];
+        st.tx += p.x - last.x; st.ty += p.y - last.y;
+        last = p; apply();
+      }
+    });
+    function up(e){
+      delete pts[e.pointerId];
+      var ids = Object.keys(pts);
+      pinch = null;
+      last = ids.length === 1 ? pts[ids[0]] : null;
+      if (!ids.length) stage.classList.remove('dragging');
+    }
+    stage.addEventListener('pointerup', up);
+    stage.addEventListener('pointercancel', up);
+  })();
+
+  /* ---------- Planilha .xlsx mínima (sem bibliotecas externas) ---------- */
+
+  var CRC_TABLE = (function(){
+    var t = new Uint32Array(256);
+    for (var n=0;n<256;n++){
+      var c = n;
+      for (var k=0;k<8;k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+      t[n] = c >>> 0;
+    }
+    return t;
+  })();
+
+  function crc32(bytes){
+    var c = 0xFFFFFFFF;
+    for (var i=0;i<bytes.length;i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+    return (c ^ 0xFFFFFFFF) >>> 0;
+  }
+
+  // Zip sem compressão (método "store") — suficiente para um .xlsx pequeno.
+  function zipStore(files){
+    var enc = new TextEncoder();
+    var parts = [], central = [], offset = 0;
+    function u16(v){ return [v & 0xFF, (v >>> 8) & 0xFF]; }
+    function u32(v){ return [v & 0xFF, (v >>> 8) & 0xFF, (v >>> 16) & 0xFF, (v >>> 24) & 0xFF]; }
+    var dosTime = 0, dosDate = ((2026-1980) << 9) | (1 << 5) | 1;
+    files.forEach(function(f){
+      var name = enc.encode(f.name);
+      var data = typeof f.data === 'string' ? enc.encode(f.data) : f.data;
+      var crc = crc32(data);
+      var local = [].concat(
+        u32(0x04034b50), u16(20), u16(0x0800), u16(0), u16(dosTime), u16(dosDate),
+        u32(crc), u32(data.length), u32(data.length), u16(name.length), u16(0));
+      parts.push(new Uint8Array(local), name, data);
+      central.push({ name: name, crc: crc, size: data.length, offset: offset });
+      offset += local.length + name.length + data.length;
+    });
+    var cdStart = offset, cdSize = 0;
+    central.forEach(function(c){
+      var h = [].concat(
+        u32(0x02014b50), u16(20), u16(20), u16(0x0800), u16(0), u16(dosTime), u16(dosDate),
+        u32(c.crc), u32(c.size), u32(c.size), u16(c.name.length), u16(0), u16(0),
+        u16(0), u16(0), u32(0), u32(c.offset));
+      parts.push(new Uint8Array(h), c.name);
+      cdSize += h.length + c.name.length;
+    });
+    parts.push(new Uint8Array([].concat(
+      u32(0x06054b50), u16(0), u16(0), u16(central.length), u16(central.length),
+      u32(cdSize), u32(cdStart), u16(0))));
+    var total = parts.reduce(function(s, p){ return s + p.length; }, 0);
+    var out = new Uint8Array(total), o = 0;
+    parts.forEach(function(p){ out.set(p, o); o += p.length; });
+    return out;
+  }
+
+  function xmlEsc(s){
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function colName(i){ return String.fromCharCode(65 + i); }
+
+  // rows: [{group, name, spec, qty}] ; title: string
+  function buildLegendXlsx(title, rows){
+    var header = ['Grupo', 'Componente', 'Especificação', 'Quantidade'];
+    var xmlRows = [];
+    function strCell(ref, v, s){ return '<c r="'+ref+'" t="inlineStr"'+(s?' s="'+s+'"':'')+'><is><t xml:space="preserve">'+xmlEsc(v)+'</t></is></c>'; }
+    function numCell(ref, v, s){ return '<c r="'+ref+'"'+(s?' s="'+s+'"':'')+'><v>'+v+'</v></c>'; }
+
+    xmlRows.push('<row r="1" ht="22" customHeight="1">'+strCell('A1', title, 1)+'</row>');
+    xmlRows.push('<row r="3">'+header.map(function(h, i){ return strCell(colName(i)+'3', h, 2); }).join('')+'</row>');
+    var r = 4;
+    rows.forEach(function(it){
+      xmlRows.push('<row r="'+r+'">' +
+        strCell('A'+r, it.group, 3) + strCell('B'+r, it.name, 3) + strCell('C'+r, it.spec, 3) + numCell('D'+r, it.qty, 4) +
+        '</row>');
+      r++;
+    });
+    var first = 4, last = r - 1;
+    var sum = rows.reduce(function(s, it){ return s + it.qty; }, 0);
+    xmlRows.push('<row r="'+r+'">' + strCell('A'+r, 'Total de itens', 5) + strCell('B'+r, '', 5) + strCell('C'+r, '', 5) +
+      '<c r="D'+r+'" s="6"><f>SUM(D'+first+':D'+last+')</f><v>'+sum+'</v></c></row>');
+
+    var sheet = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+      '<dimension ref="A1:D'+r+'"/>' +
+      '<sheetViews><sheetView workbookViewId="0"><pane ySplit="3" topLeftCell="A4" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>' +
+      '<cols><col min="1" max="1" width="20" customWidth="1"/><col min="2" max="2" width="24" customWidth="1"/>' +
+      '<col min="3" max="3" width="18" customWidth="1"/><col min="4" max="4" width="13" customWidth="1"/></cols>' +
+      '<sheetData>' + xmlRows.join('') + '</sheetData>' +
+      '<autoFilter ref="A3:D'+last+'"/>' +
+      '</worksheet>';
+
+    var styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+      '<fonts count="3">' +
+        '<font><sz val="11"/><name val="Calibri"/></font>' +
+        '<font><b/><sz val="11"/><name val="Calibri"/></font>' +
+        '<font><b/><sz val="14"/><name val="Calibri"/></font>' +
+      '</fonts>' +
+      '<fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>' +
+        '<fill><patternFill patternType="solid"><fgColor rgb="FFEDEFF2"/><bgColor indexed="64"/></patternFill></fill></fills>' +
+      '<borders count="3"><border><left/><right/><top/><bottom/><diagonal/></border>' +
+        '<border><left/><right/><top/><bottom style="thin"><color rgb="FF9AA1AB"/></bottom><diagonal/></border>' +
+        '<border><left/><right/><top style="thin"><color rgb="FF5B6470"/></top><bottom/><diagonal/></border></borders>' +
+      '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
+      '<cellXfs count="7">' +
+        '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>' +
+        '<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/>' +
+        '<xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/>' +
+        '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>' +
+        '<xf numFmtId="1" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>' +
+        '<xf numFmtId="0" fontId="1" fillId="0" borderId="2" xfId="0" applyFont="1" applyBorder="1"/>' +
+        '<xf numFmtId="1" fontId="1" fillId="0" borderId="2" xfId="0" applyNumberFormat="1" applyFont="1" applyBorder="1"/>' +
+      '</cellXfs>' +
+      '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>' +
+      '</styleSheet>';
+
+    var files = [
+      { name: '[Content_Types].xml', data: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+        '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+        '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+        '<Default Extension="xml" ContentType="application/xml"/>' +
+        '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+        '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' +
+        '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
+        '</Types>' },
+      { name: '_rels/.rels', data: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+        '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>' +
+        '</Relationships>' },
+      { name: 'xl/workbook.xml', data: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+        '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+        '<sheets><sheet name="Legenda" sheetId="1" r:id="rId1"/></sheets>' +
+        '<definedNames><definedName name="_xlnm._FilterDatabase" localSheetId="0" hidden="1">Legenda!$A$3:$D$'+last+'</definedName></definedNames>' +
+        '<calcPr calcId="191029" fullCalcOnLoad="1"/></workbook>' },
+      { name: 'xl/_rels/workbook.xml.rels', data: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+        '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>' +
+        '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
+        '</Relationships>' },
+      { name: 'xl/styles.xml', data: styles },
+      { name: 'xl/worksheets/sheet1.xml', data: sheet }
+    ];
+    return zipStore(files);
+  }
+
+  /* ---------- Botão: exportar legenda ---------- */
+
+  function legendRows(){
+    var out = [], group = '';
+    Array.prototype.forEach.call(document.querySelectorAll('.legend-table tbody tr'), function(tr){
+      if (tr.classList.contains('grp')){ group = tr.textContent.trim(); return; }
+      var nameCell = tr.querySelector('.c-name');
+      out.push({
+        group: group,
+        name: nameCell.firstChild.textContent.trim(),
+        spec: tr.querySelector('td.c-spec').textContent.trim(),
+        qty: parseInt(tr.querySelector('.c-qty').textContent, 10) || 0
+      });
+    });
+    return out;
+  }
+
+  (function setupExport(){
+    var actions = document.getElementById('legendActions');
+    var btn = document.getElementById('btnExport');
+    var status = document.getElementById('exportStatus');
+    var getDownloads = (window.claude && window.claude.use) ? window.claude.use('downloads') : Promise.resolve(null);
+    getDownloads.then(function(downloads){
+      if (!downloads) return;              // visualização sem suporte: o botão fica oculto
+      actions.hidden = false;
+      btn.addEventListener('click', function(){
+        if (btn.getAttribute('aria-busy') === 'true') return;
+        btn.setAttribute('aria-busy', 'true');
+        status.textContent = '';
+        var bytes = buildLegendXlsx('Estrutura LED 5×3 — Legenda de componentes', legendRows());
+        downloads.save({ filename: 'Estrutura LED 5x3 - Legenda.xlsx', data: new Blob([bytes]) })
+          .then(function(){ status.textContent = 'Planilha exportada.'; })
+          .catch(function(err){
+            var code = err && err.code;
+            if (code === 'declined') status.textContent = 'Exportação cancelada.';
+            else if (code === 'rate_limited') status.textContent = 'Aguarde um instante e tente de novo.';
+            else if (code === 'extension_not_enabled') status.textContent = 'Exportação em .xlsx indisponível nesta visualização.';
+            else if (code === 'unavailable' || code === 'not_granted' || code === 'capability_disabled' || code === 'capability_removed'){
+              actions.hidden = true;
+            }
+            else status.textContent = 'Não foi possível exportar a planilha.';
+          })
+          .then(function(){ btn.removeAttribute('aria-busy'); });
+      });
+    });
+  })();
+})();
+</script>
+
+</body></html>
