@@ -1,4 +1,8 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Estrutura LED 5×3</title>
 <style>
   :root{
@@ -153,11 +157,12 @@
     opacity:1;
     transform:translateX(0);
   }
+  .railnav button:hover .rn-tick{ opacity:1; }
 
   .railnav .rn-tick{
     width:18px; height:2px;
-    background:var(--ink-faint);
-    opacity:.5;
+    background:var(--accent);
+    opacity:.6;
     transition:all .3s ease;
   }
 
@@ -734,7 +739,7 @@
         </table>
       </div>
       <figcaption><span>Legenda</span><span>Quantidades totais</span></figcaption>
-      <div class="legend-actions" id="legendActions" hidden>
+      <div class="legend-actions" id="legendActions">
         <span class="export-status" id="exportStatus" role="status" aria-live="polite"></span>
         <button type="button" class="btn-export" id="btnExport">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M7 1.5v7.5M7 9l-3-3M7 9l3-3M2 11.5h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -767,7 +772,7 @@
         <button type="button" data-stage="comeco" aria-pressed="true">Começo</button>
         <button type="button" data-stage="final" aria-pressed="false">Final</button>
       </div>
-      <div class="badge" id="badge">Vista 01 / 04</div>
+      <div class="badge" id="badge">Vista 01 / 05</div>
     </div>
   </div>
 
@@ -776,7 +781,7 @@
   <div class="intro-mark" id="introMark">
     <p class="eyebrow">Estrutura treliçada · Painel de LED</p>
     <h1>Estrutura LED 5×3</h1>
-    <p>Role a página para ver as vistas frontal, lateral, de topo e isométrica — e, no final, os desenhos com as cotas.</p>
+    <p>Role a página para ver as vistas frontal, lateral, posterior, de topo e isométrica — e, no final, os desenhos com as cotas.</p>
   </div>
 
   <nav class="railnav" id="railnav" aria-label="Navegação entre vistas"></nav>
@@ -1143,7 +1148,7 @@
     {
       id: 'frontal',
       az: 0, el: 0, fov: 24,
-      kicker: '01 / 04 — Vista Frontal',
+      kicker: '01 / 05 — Vista Frontal',
       title: 'Estrutura em Box Truss Q30',
       desc: 'Três pares de torres de 5 m sustentam o quadro superior. À frente, a treliça do painel de LED é içada por duas talhas.',
       specs: ['Largura <b>5,00 m</b>', 'Altura <b>5,90 m</b>', 'Vãos <b>2 × 2,00 m</b>']
@@ -1151,23 +1156,32 @@
     {
       id: 'lateral',
       az: -90, el: 0, fov: 24,
-      kicker: '02 / 04 — Vista Lateral',
+      kicker: '02 / 05 — Vista Lateral',
       title: 'Profundidade e Balanço',
       desc: 'Os braços superiores avançam 0,50 m além das torres para receber as talhas. Na posição final, o painel de 3 m fica com a base a 1,85 m do piso.',
       specs: ['Profundidade <b>2,50 m</b>', 'Base <b>2,02 m</b>', 'Painel <b>3,00 m</b>']
     },
     {
+      id: 'posterior',
+      az: -180, el: 0, fov: 24,
+      kicker: '03 / 05 — Vista Posterior',
+      title: 'Estrutura por Trás',
+      desc: 'De trás, aparecem as torres traseiras, os cabos de aço de travamento e as caixas d’água que servem de lastro sobre a base.',
+      specs: ['Largura <b>5,00 m</b>', 'Altura <b>5,90 m</b>', 'Lastro <b>2 × 1000 L</b>']
+    },
+    {
       id: 'topo',
-      az: 0, el: 89.9, fov: 24,
-      kicker: '03 / 04 — Vista Topo',
+      // -360 equivale a 0: a câmera continua o giro no mesmo sentido ao subir para o topo.
+      az: -360, el: 89.9, fov: 24,
+      kicker: '04 / 05 — Vista Topo',
       title: 'Planta da Estrutura',
       desc: 'A base de 4,96 × 2,02 m recebe quatro praticáveis e duas caixas d’água de 1000 litros, que servem de lastro.',
       specs: ['Base <b>4,96 × 2,02 m</b>', '<b>2</b> caixas d’água 1000 L', '<b>12</b> cubos Q30']
     },
     {
       id: 'isometrica',
-      az: -45, el: 35.26, fov: 30,
-      kicker: '04 / 04 — Vista Isométrica',
+      az: -405, el: 35.26, fov: 30,   // -405 equivale a -45
+      kicker: '05 / 05 — Vista Isométrica',
       title: 'Visão de Conjunto',
       desc: 'Conjunto com 31 segmentos de box truss Q30, 60 módulos de LED de 0,50 × 0,50 m e cabos de aço de travamento.',
       specs: ['<b>31</b> segmentos Q30', '<b>60</b> módulos de LED', '<b>10</b> cabos de aço']
@@ -1175,6 +1189,7 @@
   ];
 
   var N = VIEWS.length;
+  var TOPO_IDX = VIEWS.findIndex(function(v){ return v.id === 'topo'; });
 
   /* ------------------------- Enquadramento ------------------------- */
 
@@ -1265,8 +1280,8 @@
 
   var mouseNX = 0, mouseNY = 0;   // posição do mouse (-1 a 1)
   var smoothNX = 0, smoothNY = 0; // posição suavizada usada pela câmera
-  var MOUSE_ORBIT_AZ = 20;  // graus de giro horizontal nos extremos da tela
-  var MOUSE_ORBIT_EL = 20;  // graus de giro vertical nos extremos da tela
+  var MOUSE_ORBIT_AZ = 30;  // graus de giro horizontal nos extremos da tela
+  var MOUSE_ORBIT_EL = 30;  // graus de giro vertical nos extremos da tela
   if (!REDUCED_MOTION){
     window.addEventListener('mousemove', function(e){
       mouseNX = (e.clientX / window.innerWidth) * 2 - 1;
@@ -1329,7 +1344,7 @@
     camera.updateProjectionMatrix();
 
     // grid / eixos só relevantes perto da vista de topo
-    var distFromTop = Math.abs(continuous - 2);
+    var distFromTop = Math.abs(continuous - TOPO_IDX);
     gridStuff.visible = distFromTop < 1.6;
     gridStuff.children.forEach(function(child){
       if (child.material) child.material.opacity = Math.max(0, 1 - distFromTop/1.4) * (child.type === 'GridHelper' ? 0.35 : 1);
@@ -1648,35 +1663,57 @@
   }
 
   (function setupExport(){
-    var actions = document.getElementById('legendActions');
     var btn = document.getElementById('btnExport');
     var status = document.getElementById('exportStatus');
-    var getDownloads = (window.claude && window.claude.use) ? window.claude.use('downloads') : Promise.resolve(null);
-    getDownloads.then(function(downloads){
-      if (!downloads) return;              // visualização sem suporte: o botão fica oculto
-      actions.hidden = false;
-      btn.addEventListener('click', function(){
-        if (btn.getAttribute('aria-busy') === 'true') return;
-        btn.setAttribute('aria-busy', 'true');
-        status.textContent = '';
-        var bytes = buildLegendXlsx('Estrutura LED 5×3 — Legenda de componentes', legendRows());
-        downloads.save({ filename: 'Estrutura LED 5x3 - Legenda.xlsx', data: new Blob([bytes]) })
+    var FILENAME = 'Estrutura LED 5x3 - Legenda.xlsx';
+    var MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+    // Dentro do Claude: usa a capacidade "downloads". Em qualquer outro site
+    // (GitHub Pages, Netlify, arquivo local) window.claude não existe → download direto.
+    var capPromise = (window.claude && typeof window.claude.use === 'function')
+      ? window.claude.use('downloads').catch(function(){ return null; })
+      : Promise.resolve(null);
+
+    function directDownload(blob){
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = FILENAME;
+      a.rel = 'noopener';
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 1500);
+    }
+
+    btn.addEventListener('click', function(){
+      if (btn.getAttribute('aria-busy') === 'true') return;
+      btn.setAttribute('aria-busy', 'true');
+      status.textContent = '';
+      var blob;
+      try {
+        blob = new Blob([buildLegendXlsx('Estrutura LED 5×3 — Legenda de componentes', legendRows())], { type: MIME });
+      } catch (e){
+        status.textContent = 'Não foi possível gerar a planilha.';
+        btn.removeAttribute('aria-busy');
+        return;
+      }
+      capPromise.then(function(downloads){
+        if (!downloads){ directDownload(blob); status.textContent = 'Planilha exportada.'; return; }
+        return downloads.save({ filename: FILENAME, data: blob })
           .then(function(){ status.textContent = 'Planilha exportada.'; })
           .catch(function(err){
             var code = err && err.code;
             if (code === 'declined') status.textContent = 'Exportação cancelada.';
             else if (code === 'rate_limited') status.textContent = 'Aguarde um instante e tente de novo.';
-            else if (code === 'extension_not_enabled') status.textContent = 'Exportação em .xlsx indisponível nesta visualização.';
-            else if (code === 'unavailable' || code === 'not_granted' || code === 'capability_disabled' || code === 'capability_removed'){
-              actions.hidden = true;
-            }
-            else status.textContent = 'Não foi possível exportar a planilha.';
-          })
-          .then(function(){ btn.removeAttribute('aria-busy'); });
-      });
+            else { directDownload(blob); status.textContent = 'Planilha exportada.'; }
+          });
+      }).catch(function(){
+        status.textContent = 'Não foi possível exportar a planilha.';
+      }).then(function(){ btn.removeAttribute('aria-busy'); });
     });
   })();
 })();
 </script>
 
-</body></html>
+</html>
